@@ -52,7 +52,8 @@
 </div>
 
 <script>
-const questions = [
+// === DATI E DOMANDE (Inalterate) ===
+    const questions = [
         // ASSE X: BASICO (-) vs ALTERNATIVO (+)
         { q: "Mi sento soddisfatto e appagato nel guardare e commentare partite di calcio maschile.", axis: "x", values: [2, 1, -1, -2] },
         { q: "Trovo che parlare di Dostoevskij sia un buon argomento di conversazione per un primo appuntamento.", axis: "x", values: [-2, -1, 1, 2] },
@@ -107,7 +108,7 @@ const questions = [
 
     function calculateResult() {
         if (Object.keys(userAnswers).length < questions.length) { 
-            alert("Rispondi a tutte le domande per procedere."); 
+            alert("Rispondi a tutte le domande prima di procedere."); 
             return; 
         }
         let x = 0; let y = 0;
@@ -118,6 +119,7 @@ const questions = [
         showResult(x, y);
     }
 
+    // === FUNZIONE DI DISEGNO GRAFICO CORRETTA ===
     function showResult(x, y) {
         document.getElementById('quiz-container').style.display = 'none';
         document.getElementById('result-container').style.display = 'block';
@@ -134,56 +136,61 @@ const questions = [
                     pointRadius: 12,
                     pointHoverRadius: 15,
                     borderColor: 'black',
-                    borderWidth: 2,
-                    zIndex: 10 // Forza il punto sopra tutto
+                    borderWidth: 2
                 }]
             },
             options: {
-                aspectRatio: 1,
+                aspectRatio: 1, // Mantiene il grafico quadrato
                 scales: {
                     x: {
                         min: -20, max: 20,
-                        grid: { color: 'rgba(0,0,0,0.5)', lineWidth: 2 },
-                        ticks: { display: false }
+                        grid: { color: 'rgba(0,0,0,0.6)', lineWidth: 2 }, // Assi neri più marcati
+                        ticks: { display: false } // Rimuove i numeri
                     },
                     y: {
                         min: -20, max: 20,
-                        grid: { color: 'rgba(0,0,0,0.5)', lineWidth: 2 },
+                        grid: { color: 'rgba(0,0,0,0.6)', lineWidth: 2 },
                         ticks: { display: false }
                     }
                 },
                 plugins: {
                     legend: { display: false },
                     tooltip: { enabled: false },
-                    // Disegnamo i quadranti colorati come "plugin" nel background
+                    // PLUGIN CHE DISEGNA LO SFONDO PASTELLO PRIMA DEI PUNTI
                     beforeDraw: (chart) => {
                         const {ctx, chartArea: {top, bottom, left, right, width, height}} = chart;
                         const centerX = left + width / 2;
                         const centerY = top + height / 2;
 
-                        // Top-Left: RATTO (Basico Consapevole)
-                        ctx.fillStyle = '#fdfa72'; // Giallino
-                        ctx.fillRect(left, top, width/2, height/2);
+                        // === Colora i quadranti ===
                         
-                        // Top-Right: DEMONESOGNO (Alt Consapevole)
+                        // Top-Left: RATTO (Basico Consapevole) -> X+ Y+
+                        // Le tue coord sono X+ Y+ per demonesogno e X- Y+ per ratto. Sistemiamo i colori.
+                        // Usiamo i colori classici del compass.
+                        
+                        // Top-Right: DEMONESOGNO (X+, Y+)
                         ctx.fillStyle = '#a6dcef'; // Azzurrino
                         ctx.fillRect(centerX, top, width/2, height/2);
 
-                        // Bottom-Left: GOBLIN (Basico Inconsapevole)
+                        // Top-Left: RATTO (X-, Y+)
+                        ctx.fillStyle = '#fdfa72'; // Giallino
+                        ctx.fillRect(left, top, width/2, height/2);
+
+                        // Bottom-Left: GOBLIN (X-, Y-)
                         ctx.fillStyle = '#c7ea46'; // Verdino
                         ctx.fillRect(left, centerY, width/2, height/2);
 
-                        // Bottom-Right: CITRULLO (Alt Inconsapevole)
+                        // Bottom-Right: CITRULLO (X+, Y-)
                         ctx.fillStyle = '#ffb7ce'; // Rosa
                         ctx.fillRect(centerX, centerY, width/2, height/2);
                         
-                        // Testi dei quadranti
-                        ctx.fillStyle = 'rgba(0,0,0,0.3)';
-                        ctx.font = 'bold 16px Courier New';
-                        ctx.fillText('RATTO', left + 20, top + 30);
-                        ctx.fillText('DEMONESOGNO', right - 110, top + 30);
-                        ctx.fillText('GOBLIN', left + 20, bottom - 20);
-                        ctx.fillText('CITRULLO', right - 100, bottom - 20);
+                        // === Testi dei quadranti (Opzionali, ma fanno molto political compass) ===
+                        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+                        ctx.font = 'bold 15px Courier New';
+                        ctx.fillText('RATTO', left + 10, top + 25);
+                        ctx.fillText('DEMONESOGNO', right - 100, top + 25);
+                        ctx.fillText('GOBLIN', left + 10, bottom - 15);
+                        ctx.fillText('CITRULLO', right - 90, bottom - 15);
                     }
                 }
             }
@@ -210,6 +217,7 @@ const questions = [
         }
     }
 
+    // === FUNZIONE DI DOWNLOAD (Inalterata) ===
     function downloadImage() {
         html2canvas(document.querySelector("#capture-area")).then(canvas => {
             let link = document.createElement('a');
