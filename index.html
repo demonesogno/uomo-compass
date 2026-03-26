@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uomo-Compass: Il Test Definitivo</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Courier New', Courier, monospace; background: #0d0d0d; color: #00ff41; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { max-width: 800px; background: #1a1a1a; padding: 30px; border: 1px solid #00ff41; border-radius: 5px; box-shadow: 0 0 15px rgba(0,255,65,0.1); }
+        h1 { text-align: center; text-transform: uppercase; font-size: 2.2rem; margin-bottom: 5px; }
+        .subtitle { text-align: center; color: #888; margin-bottom: 30px; font-size: 0.9rem; }
+        .question { margin-bottom: 25px; padding: 15px; border-left: 3px solid #333; transition: 0.3s; }
+        .question:hover { border-left-color: #00ff41; background: #222; }
+        .question-text { font-size: 1.1rem; display: block; margin-bottom: 12px; color: #eee; }
+        .options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        button.option-btn { padding: 10px; border: 1px solid #444; background: #111; color: #00ff41; cursor: pointer; transition: 0.2s; font-family: inherit; }
+        button.option-btn:hover { border-color: #00ff41; background: #00ff41; color: #000; }
+        button.option-btn.selected { background: #00ff41; color: #000; border-color: #00ff41; font-weight: bold; }
+        #submit-btn { width: 100%; padding: 20px; background: #00ff41; color: #000; border: none; font-size: 1.3rem; font-weight: bold; cursor: pointer; margin-top: 30px; text-transform: uppercase; }
+        #result-container { display: none; text-align: center; width: 100%; max-width: 600px; animation: fadeIn 1s; }
+        canvas { background: #fff; margin: 20px 0; border-radius: 4px; }
+        .profile-card { padding: 25px; border: 2px solid #00ff41; background: #000; margin-top: 20px; }
+        .profile-name { font-size: 2.5rem; color: #ff003c; text-transform: uppercase; margin-bottom: 10px; text-shadow: 2px 2px #550014; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div class="container" id="quiz-container">
+    <h1>UOMO-COMPASS 🧭</h1>
+    <p class="subtitle">Mappatura antropologica del maschio italico.</p>
+    <div id="questions-list"></div>
+    <button id="submit-btn" onclick="calculateResult()">ANALIZZA SOGGETTO</button>
+</div>
+
+<div id="result-container">
+    <h2>RISULTATO ANALISI</h2>
+    <canvas id="compassChart" width="500" height="500"></canvas>
+    <div class="profile-card">
+        <div class="profile-name" id="profile-title"></div>
+        <p id="profile-desc"></p>
+    </div>
+    <button onclick="location.reload()" style="margin-top:20px; background:none; color:#888; border:none; cursor:pointer; text-decoration:underline;">Ricomincia Test</button>
+</div>
+
+<script>
+    const questions = [
+        // ASSE X: BASICO (-) vs ALTERNATIVO (+)
+        { q: "Mi sento soddisfatto e appagato nel guardare e commentare partite di calcio maschile.", axis: "x", values: [2, 1, -1, -2] },
+        { q: "Trovo che parlare di Dostoevskij sia un buon argomento di conversazione per un primo appuntamento.", axis: "x", values: [-2, -1, 1, 2] },
+        { q: "Compro vestiti esclusivamente in mercatini vintage indossati da persone morte almeno da un decennio.", axis: "x", values: [-2, -1, 1, 2] },
+        { q: "Meglio il cinema d'autore (in lingua originale con sottotitoli) rispetto a un film di supereroi della Marvel.", axis: "x", values: [-2, -1, 1, 2] },
+        { q: "Artista preferito? Olly.", axis: "x", values: [2, 1, -1, -2] },
+        { q: "Adoro andare in vacanza con i bro a Gallipoli, Mykonos e Ibiza.", axis: "x", values: [2, 1, -1, -2] },
+        { q: "È normalissimo affittare una nana per un addio al celibato.", axis: "x", values: [2, 1, -1, -2] },
+        { q: "Vado ad Amsterdam per le cannette e i musei, MICA PER LE MIGNOTTE.", axis: "x", values: [-2, -1, 1, 2] },
+        { q: "Ho votato NO al referendum sulla giustizia.", axis: "x", values: [2, 1, -1, -2] },
+        { q: "Stasera pizza? No scusami fra sono in cut.", axis: "x", values: [2, 1, -1, -2] },
+
+        // ASSE Y: INCONSAPEVOLE (-) vs CONSAPEVOLE (+)
+        { q: "Mi è capitato di usare un mio trauma infantile o una mia insicurezza per far colpo o giustificare un comportamento di merda.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Quando scelgo una foto per IG, la analizzo per capire esattamente che tipo di 'vibe' comunica ai follower.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Non mi rendo quasi mai conto di stare esagerando con i racconti o di annoiare chi mi ascolta.", axis: "y", values: [2, 1, -1, -2] },
+        { q: "Faccio autoironia feroce sui miei difetti solo per togliere agli altri il potere di usarli contro di me.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Uso termini come 'patriarcato' o 'gaslighting' perché so che mi fanno svoltare con le ragazze di sinistra.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Le mie ex sono tutte 'pazze' o 'psicopatiche': io sono sempre stato quello equilibrato.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "NON SI PUÒ PIÙ DIRE NIENTE!!!!", axis: "y", values: [2, 1, -1, -2] },
+        { q: "Mi sento realizzato quando posso mostrare a qualcuno le cose che so.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Quando il partner si arrabbia con me, penso spesso che stia esagerando senza motivo.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Dico di non essere pronto per una relazione ma mi prendo tutti i benefit senza le responsabilità.", axis: "y", values: [-2, -1, 1, 2] }
+    ];
+
+    const userAnswers = {};
+
+    function renderQuestions() {
+        const container = document.getElementById('questions-list');
+        const labels = ["Per niente", "Poco", "Abbastanza", "Molto"];
+        questions.forEach((q, i) => {
+            const div = document.createElement('div');
+            div.className = 'question';
+            div.innerHTML = `<span class="question-text">${i + 1}. ${q.q}</span>`;
+            const optDiv = document.createElement('div');
+            optDiv.className = 'options';
+            q.values.forEach((v, idx) => {
+                const b = document.createElement('button');
+                b.className = 'option-btn';
+                b.innerText = labels[idx];
+                b.onclick = () => {
+                    userAnswers[i] = v;
+                    Array.from(optDiv.children).forEach(btn => btn.classList.remove('selected'));
+                    b.classList.add('selected');
+                };
+                optDiv.appendChild(b);
+            });
+            div.appendChild(optDiv);
+            container.appendChild(div);
+        });
+    }
+
+    function calculateResult() {
+        if (Object.keys(userAnswers).length < questions.length) { alert("Rispondi a tutto, non scappare."); return; }
+        let x = 0; let y = 0;
+        questions.forEach((q, i) => { if (q.axis === 'x') x += userAnswers[i]; else y += userAnswers[i]; });
+        showResult(x, y);
+    }
+
+    function showResult(x, y) {
+        document.getElementById('quiz-container').style.display = 'none';
+        document.getElementById('result-container').style.display = 'block';
+        const ctx = document.getElementById('compassChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'scatter',
+            data: { datasets: [{ label: 'Tu', data: [{ x: x, y: y }], backgroundColor: '#ff003c', pointRadius: 10 }] },
+            options: {
+                scales: {
+                    x: { min: -20, max: 20, title: { display: true, text: '← BASICO | ALTERNATIVO →' } },
+                    y: { min: -20, max: 20, title: { display: true, text: '← INCONSAPEVOLE | CONSAPEVOLE ↑' } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        const title = document.getElementById('profile-title');
+        const desc = document.getElementById('profile-desc');
+
+        if (x < 0 && y < 0) {
+            title.innerText = "GOBLIN";
+            desc.innerText = "L'uomo basico puro. Vivi di istinto, calcio e pizza in cut. Se fai una cazzata è perché non ne hai idea. Sei un normie felice, il pilastro della società.";
+        } else if (x < 0 && y >= 0) {
+            title.innerText = "RATTO";
+            desc.innerText = "Il basico consapevole. Sei un evitante che mimetizza la sua banalità dietro strategie di manipolazione. Usi il 'non sono pronto' come un'arma di distruzione di massa.";
+        } else if (x >= 0 && y >= 0) {
+            title.innerText = "DEMONESOGNO";
+            desc.innerText = "L'alternativo consapevole. Usi Dostoevskij e il patriarcato per svoltare, ma sei un manipolatore di alto livello. Colto, tossico e profondamente evitante.";
+        } else {
+            title.innerText = "CITRULLO";
+            desc.innerText = "L'alternativo smarrito. Compri vestiti di persone morte e parli di cinema polacco, ma sei troppo confuso per manipolare qualcuno. Vivi in una nuvola, innocuo.";
+        }
+    }
+    renderQuestions();
+</script>
+</body>
+</html>
