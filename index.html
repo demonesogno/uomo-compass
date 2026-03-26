@@ -52,9 +52,7 @@
 </div>
 
 <script>
-// === DATI E DOMANDE (Inalterate) ===
-    const questions = [
-        // ASSE X: BASICO (-) vs ALTERNATIVO (+)
+const questions = [
         { q: "Mi sento soddisfatto e appagato nel guardare e commentare partite di calcio maschile.", axis: "x", values: [2, 1, -1, -2] },
         { q: "Trovo che parlare di Dostoevskij sia un buon argomento di conversazione per un primo appuntamento.", axis: "x", values: [-2, -1, 1, 2] },
         { q: "Compro vestiti esclusivamente in mercatini vintage indossati da persone morte almeno da un decennio.", axis: "x", values: [-2, -1, 1, 2] },
@@ -65,8 +63,6 @@
         { q: "Vado ad Amsterdam per le cannette e i musei, MICA PER LE MIGNOTTE.", axis: "x", values: [-2, -1, 1, 2] },
         { q: "Ho votato NO al referendum sulla giustizia.", axis: "x", values: [2, 1, -1, -2] },
         { q: "Stasera pizza? No scusami fra sono in cut.", axis: "x", values: [2, 1, -1, -2] },
-
-        // ASSE Y: INCONSAPEVOLE (-) vs CONSAPEVOLE (+)
         { q: "Mi è capitato di usare un mio trauma infantile o una mia insicurezza per far colpo o giustificare un comportamento di merda.", axis: "y", values: [-2, -1, 1, 2] },
         { q: "Quando scelgo una foto per IG, la analizzo per capire esattamente che tipo di 'vibe' comunica ai follower.", axis: "y", values: [-2, -1, 1, 2] },
         { q: "Non mi rendo quasi mai conto di stare esagerando con i racconti o di annoiare chi mi ascolta.", axis: "y", values: [2, 1, -1, -2] },
@@ -108,7 +104,7 @@
 
     function calculateResult() {
         if (Object.keys(userAnswers).length < questions.length) { 
-            alert("Rispondi a tutte le domande prima di procedere."); 
+            alert("Rispondi a tutte le domande."); 
             return; 
         }
         let x = 0; let y = 0;
@@ -119,78 +115,55 @@
         showResult(x, y);
     }
 
-    // === FUNZIONE DI DISEGNO GRAFICO CORRETTA ===
     function showResult(x, y) {
         document.getElementById('quiz-container').style.display = 'none';
         document.getElementById('result-container').style.display = 'block';
         
-        const ctx = document.getElementById('compassChart').getContext('2d');
+        const canvas = document.getElementById('compassChart');
+        const ctx = canvas.getContext('2d');
         
+        // Distruggiamo eventuali grafici precedenti per evitare sovrapposizioni
+        let chartStatus = Chart.getChart("compassChart"); 
+        if (chartStatus != undefined) { chartStatus.destroy(); }
+
         new Chart(ctx, {
             type: 'scatter',
             data: {
                 datasets: [{
-                    label: 'Soggetto',
                     data: [{ x: x, y: y }],
                     backgroundColor: 'red',
-                    pointRadius: 12,
-                    pointHoverRadius: 15,
-                    borderColor: 'black',
-                    borderWidth: 2
+                    pointRadius: 14,
+                    borderColor: 'white',
+                    borderWidth: 3,
                 }]
             },
             options: {
-                aspectRatio: 1, // Mantiene il grafico quadrato
+                responsive: true,
+                maintainAspectRatio: true,
+                animation: false,
                 scales: {
-                    x: {
-                        min: -20, max: 20,
-                        grid: { color: 'rgba(0,0,0,0.6)', lineWidth: 2 }, // Assi neri più marcati
-                        ticks: { display: false } // Rimuove i numeri
-                    },
-                    y: {
-                        min: -20, max: 20,
-                        grid: { color: 'rgba(0,0,0,0.6)', lineWidth: 2 },
-                        ticks: { display: false }
-                    }
+                    x: { min: -20, max: 20, grid: { color: 'rgba(0,0,0,0.8)', lineWidth: 2 }, ticks: { display: false } },
+                    y: { min: -20, max: 20, grid: { color: 'rgba(0,0,0,0.8)', lineWidth: 2 }, ticks: { display: false } }
                 },
                 plugins: {
                     legend: { display: false },
-                    tooltip: { enabled: false },
-                    // PLUGIN CHE DISEGNA LO SFONDO PASTELLO PRIMA DEI PUNTI
                     beforeDraw: (chart) => {
                         const {ctx, chartArea: {top, bottom, left, right, width, height}} = chart;
                         const centerX = left + width / 2;
                         const centerY = top + height / 2;
 
-                        // === Colora i quadranti ===
+                        // QUADRANTI
+                        ctx.fillStyle = '#fdfa72'; ctx.fillRect(left, top, width/2, height/2); // RATTO
+                        ctx.fillStyle = '#a6dcef'; ctx.fillRect(centerX, top, width/2, height/2); // DEMONESOGNO
+                        ctx.fillStyle = '#c7ea46'; ctx.fillRect(left, centerY, width/2, height/2); // GOBLIN
+                        ctx.fillStyle = '#ffb7ce'; ctx.fillRect(centerX, centerY, width/2, height/2); // CITRULLO
                         
-                        // Top-Left: RATTO (Basico Consapevole) -> X+ Y+
-                        // Le tue coord sono X+ Y+ per demonesogno e X- Y+ per ratto. Sistemiamo i colori.
-                        // Usiamo i colori classici del compass.
-                        
-                        // Top-Right: DEMONESOGNO (X+, Y+)
-                        ctx.fillStyle = '#a6dcef'; // Azzurrino
-                        ctx.fillRect(centerX, top, width/2, height/2);
-
-                        // Top-Left: RATTO (X-, Y+)
-                        ctx.fillStyle = '#fdfa72'; // Giallino
-                        ctx.fillRect(left, top, width/2, height/2);
-
-                        // Bottom-Left: GOBLIN (X-, Y-)
-                        ctx.fillStyle = '#c7ea46'; // Verdino
-                        ctx.fillRect(left, centerY, width/2, height/2);
-
-                        // Bottom-Right: CITRULLO (X+, Y-)
-                        ctx.fillStyle = '#ffb7ce'; // Rosa
-                        ctx.fillRect(centerX, centerY, width/2, height/2);
-                        
-                        // === Testi dei quadranti (Opzionali, ma fanno molto political compass) ===
-                        ctx.fillStyle = 'rgba(0,0,0,0.4)';
-                        ctx.font = 'bold 15px Courier New';
-                        ctx.fillText('RATTO', left + 10, top + 25);
-                        ctx.fillText('DEMONESOGNO', right - 100, top + 25);
-                        ctx.fillText('GOBLIN', left + 10, bottom - 15);
-                        ctx.fillText('CITRULLO', right - 90, bottom - 15);
+                        // ETICHETTE
+                        ctx.fillStyle = 'black'; ctx.font = 'bold 14px Courier New';
+                        ctx.fillText('RATTO', left + 10, top + 20);
+                        ctx.fillText('DEMONESOGNO', right - 100, top + 20);
+                        ctx.fillText('GOBLIN', left + 10, bottom - 10);
+                        ctx.fillText('CITRULLO', right - 85, bottom - 10);
                     }
                 }
             }
@@ -199,25 +172,12 @@
         const title = document.getElementById('profile-title');
         const desc = document.getElementById('profile-desc');
 
-        if (x < 0 && y < 0) { 
-            title.innerText = "GOBLIN"; 
-            desc.innerText = "L'uomo basico puro. Vivi di istinto, calcio e pizza in cut. Se fai una cazzata è perché non ne hai idea. Sei un normie felice, il pilastro della società."; 
-        }
-        else if (x < 0 && y >= 0) { 
-            title.innerText = "RATTO"; 
-            desc.innerText = "Basico consapevole. Sei un evitante che mimetizza la sua banalità dietro strategie di manipolazione. Usi il 'non sono pronto' come un'arma di distruzione di massa."; 
-        }
-        else if (x >= 0 && y >= 0) { 
-            title.innerText = "DEMONESOGNO"; 
-            desc.innerText = "Alternativo consapevole. Usi Dostoevskij e il patriarcato per svoltare, ma sei un manipolatore di alto livello. Colto, tossico e profondamente evitante."; 
-        }
-        else { 
-            title.innerText = "CITRULLO"; 
-            desc.innerText = "L'alternativo smarrito. Compri vestiti di persone morte e parli di cinema polacco, ma sei troppo confuso per manipolare qualcuno. Vive in una nuvola, innocuo."; 
-        }
+        if (x < 0 && y < 0) { title.innerText = "GOBLIN"; desc.innerText = "L'uomo basico puro. Vivi di istinto, calcio e pizza in cut. Genuino, normie, pilastro della società."; }
+        else if (x < 0 && y >= 0) { title.innerText = "RATTO"; desc.innerText = "Basico consapevole. Un evitante che mimetizza la sua banalità dietro strategie di manipolazione."; }
+        else if (x >= 0 && y >= 0) { title.innerText = "DEMONESOGNO"; desc.innerText = "Alternativo consapevole. Usi Dostoevskij e il patriarcato per svoltare. Colto e tossico."; }
+        else { title.innerText = "CITRULLO"; desc.innerText = "Alternativo smarrito. Vivi tra vinili e nuvole, troppo confuso per manipolare nessuno."; }
     }
 
-    // === FUNZIONE DI DOWNLOAD (Inalterata) ===
     function downloadImage() {
         html2canvas(document.querySelector("#capture-area")).then(canvas => {
             let link = document.createElement('a');
