@@ -3,45 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Uomo-Compass: Il Test Definitivo</title>
+    <title>Uomo-Compass 🧭</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         body { font-family: 'Courier New', Courier, monospace; background: #0d0d0d; color: #00ff41; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .container { max-width: 800px; background: #1a1a1a; padding: 30px; border: 1px solid #00ff41; border-radius: 5px; box-shadow: 0 0 15px rgba(0,255,65,0.1); }
-        h1 { text-align: center; text-transform: uppercase; font-size: 2.2rem; margin-bottom: 5px; }
-        .subtitle { text-align: center; color: #888; margin-bottom: 30px; font-size: 0.9rem; }
-        .question { margin-bottom: 25px; padding: 15px; border-left: 3px solid #333; transition: 0.3s; }
-        .question:hover { border-left-color: #00ff41; background: #222; }
-        .question-text { font-size: 1.1rem; display: block; margin-bottom: 12px; color: #eee; }
+        .container { max-width: 800px; background: #1a1a1a; padding: 30px; border: 1px solid #00ff41; border-radius: 5px; }
+        h1 { text-align: center; text-transform: uppercase; }
+        .question { margin-bottom: 25px; padding: 15px; border-left: 3px solid #333; }
         .options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-        button.option-btn { padding: 10px; border: 1px solid #444; background: #111; color: #00ff41; cursor: pointer; transition: 0.2s; font-family: inherit; }
-        button.option-btn:hover { border-color: #00ff41; background: #00ff41; color: #000; }
-        button.option-btn.selected { background: #00ff41; color: #000; border-color: #00ff41; font-weight: bold; }
-        #submit-btn { width: 100%; padding: 20px; background: #00ff41; color: #000; border: none; font-size: 1.3rem; font-weight: bold; cursor: pointer; margin-top: 30px; text-transform: uppercase; }
-        #result-container { display: none; text-align: center; width: 100%; max-width: 600px; animation: fadeIn 1s; }
-        canvas { background: #fff; margin: 20px 0; border-radius: 4px; }
-        .profile-card { padding: 25px; border: 2px solid #00ff41; background: #000; margin-top: 20px; }
-        .profile-name { font-size: 2.5rem; color: #ff003c; text-transform: uppercase; margin-bottom: 10px; text-shadow: 2px 2px #550014; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        button.option-btn { padding: 10px; border: 1px solid #444; background: #111; color: #00ff41; cursor: pointer; }
+        button.option-btn.selected { background: #00ff41; color: #000; font-weight: bold; }
+        #submit-btn { width: 100%; padding: 20px; background: #00ff41; color: #000; border: none; font-weight: bold; cursor: pointer; margin-top: 30px; }
+        
+        /* Stile Risultato */
+        #result-container { display: none; text-align: center; width: 100%; max-width: 600px; background: #1a1a1a; padding: 20px; border: 1px solid #00ff41; }
+        #canvas-wrapper { position: relative; background: white; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
+        canvas { background: white; }
+        .profile-card { padding: 20px; background: #000; border: 2px solid #ff003c; margin-bottom: 20px; }
+        .profile-name { font-size: 2.2rem; color: #ff003c; text-transform: uppercase; }
+        .action-btns { display: flex; gap: 10px; justify-content: center; }
+        .download-btn { background: #ff003c; color: white; padding: 15px; border: none; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container" id="quiz-container">
     <h1>UOMO-COMPASS 🧭</h1>
-    <p class="subtitle">Mappatura antropologica del maschio italico.</p>
     <div id="questions-list"></div>
     <button id="submit-btn" onclick="calculateResult()">ANALIZZA SOGGETTO</button>
 </div>
 
 <div id="result-container">
-    <h2>RISULTATO ANALISI</h2>
-    <canvas id="compassChart" width="500" height="500"></canvas>
-    <div class="profile-card">
-        <div class="profile-name" id="profile-title"></div>
-        <p id="profile-desc"></p>
+    <div id="capture-area">
+        <h2>COORDINATE INDIVIDUATE</h2>
+        <div id="canvas-wrapper">
+            <canvas id="compassChart" width="500" height="500"></canvas>
+        </div>
+        <div class="profile-card">
+            <div class="profile-name" id="profile-title"></div>
+            <p id="profile-desc" style="color: #fff;"></p>
+        </div>
     </div>
-    <button onclick="location.reload()" style="margin-top:20px; background:none; color:#888; border:none; cursor:pointer; text-decoration:underline;">Ricomincia Test</button>
+    <div class="action-btns">
+        <button class="download-btn" onclick="downloadImage()">⬇️ SCARICA RISULTATO</button>
+        <button onclick="location.reload()" style="background:#444; color:white; border:none; padding:15px; cursor:pointer;">RIFAI</button>
+    </div>
 </div>
 
 <script>
@@ -99,7 +106,7 @@
     }
 
     function calculateResult() {
-        if (Object.keys(userAnswers).length < questions.length) { alert("Rispondi a tutto, non scappare."); return; }
+        if (Object.keys(userAnswers).length < questions.length) { alert("Rispondi a tutto."); return; }
         let x = 0; let y = 0;
         questions.forEach((q, i) => { if (q.axis === 'x') x += userAnswers[i]; else y += userAnswers[i]; });
         showResult(x, y);
@@ -108,36 +115,72 @@
     function showResult(x, y) {
         document.getElementById('quiz-container').style.display = 'none';
         document.getElementById('result-container').style.display = 'block';
+        
         const ctx = document.getElementById('compassChart').getContext('2d');
+        
+        // PLUGIN PER I COLORI DEI QUADRANTI
+        const backgroundPlugin = {
+            id: 'customCanvasBackgroundColor',
+            beforeDraw: (chart) => {
+                const {ctx, chartArea: {top, bottom, left, right, width, height}} = chart;
+                const centerX = left + width / 2;
+                const centerY = top + height / 2;
+
+                // Colora Quadranti
+                ctx.fillStyle = '#ffcccc'; // Citrullo (Top Right) -> In realtà le tue coord sono X+ Y-
+                ctx.fillRect(centerX, centerY, width/2, height/2); // Bottom Right
+                
+                ctx.fillStyle = '#ccffcc'; // Demonesogno (Top Right)
+                ctx.fillRect(centerX, top, width/2, height/2); // Top Right
+
+                ctx.fillStyle = '#ccccff'; // Ratto (Top Left)
+                ctx.fillRect(left, top, width/2, height/2); // Top Left
+
+                ctx.fillStyle = '#ffffcc'; // Goblin (Bottom Left)
+                ctx.fillRect(left, centerY, width/2, height/2); // Bottom Left
+            }
+        };
+
         new Chart(ctx, {
             type: 'scatter',
-            data: { datasets: [{ label: 'Tu', data: [{ x: x, y: y }], backgroundColor: '#ff003c', pointRadius: 10 }] },
+            data: {
+                datasets: [{
+                    label: 'Soggetto',
+                    data: [{ x: x, y: y }],
+                    backgroundColor: 'black',
+                    pointRadius: 10,
+                    pointStyle: 'crossRot'
+                }]
+            },
             options: {
+                responsive: true,
                 scales: {
-                    x: { min: -20, max: 20, title: { display: true, text: '← BASICO | ALTERNATIVO →' } },
-                    y: { min: -20, max: 20, title: { display: true, text: '← INCONSAPEVOLE | CONSAPEVOLE ↑' } }
+                    x: { min: -20, max: 20, grid: { color: 'black', lineWidth: 2 }, title: { display: true, text: '← BASICO | ALTERNATIVO →' }},
+                    y: { min: -20, max: 20, grid: { color: 'black', lineWidth: 2 }, title: { display: true, text: '← INCONSAPEVOLE | CONSAPEVOLE ↑' }}
                 },
                 plugins: { legend: { display: false } }
-            }
+            },
+            plugins: [backgroundPlugin]
         });
 
         const title = document.getElementById('profile-title');
         const desc = document.getElementById('profile-desc');
 
-        if (x < 0 && y < 0) {
-            title.innerText = "GOBLIN";
-            desc.innerText = "L'uomo basico puro. Vivi di istinto, calcio e pizza in cut. Se fai una cazzata è perché non ne hai idea. Sei un normie felice, il pilastro della società.";
-        } else if (x < 0 && y >= 0) {
-            title.innerText = "RATTO";
-            desc.innerText = "Il basico consapevole. Sei un evitante che mimetizza la sua banalità dietro strategie di manipolazione. Usi il 'non sono pronto' come un'arma di distruzione di massa.";
-        } else if (x >= 0 && y >= 0) {
-            title.innerText = "DEMONESOGNO";
-            desc.innerText = "L'alternativo consapevole. Usi Dostoevskij e il patriarcato per svoltare, ma sei un manipolatore di alto livello. Colto, tossico e profondamente evitante.";
-        } else {
-            title.innerText = "CITRULLO";
-            desc.innerText = "L'alternativo smarrito. Compri vestiti di persone morte e parli di cinema polacco, ma sei troppo confuso per manipolare qualcuno. Vivi in una nuvola, innocuo.";
-        }
+        if (x < 0 && y < 0) { title.innerText = "GOBLIN"; desc.innerText = "Basico puro. Genuino, normie, vive di istinto e calcio."; }
+        else if (x < 0 && y >= 0) { title.innerText = "RATTO"; desc.innerText = "Basico consapevole. Il malessere evitante che finge normalità."; }
+        else if (x >= 0 && y >= 0) { title.innerText = "DEMONESOGNO"; desc.innerText = "Alternativo consapevole. Il manipolatore intellettuale."; }
+        else { title.innerText = "CITRULLO"; desc.innerText = "Alternativo smarrito. Vive tra vinili e nuvole, innocuo."; }
     }
+
+    function downloadImage() {
+        html2canvas(document.querySelector("#capture-area")).then(canvas => {
+            let link = document.createElement('a');
+            link.download = 'risultato_uomo_compass.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+    }
+
     renderQuestions();
 </script>
 </body>
