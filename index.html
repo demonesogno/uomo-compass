@@ -52,7 +52,7 @@
 </div>
 
 <script>
-    const questions = [
+const questions = [
         // ASSE X: BASICO (-) vs ALTERNATIVO (+)
         { q: "Mi sento soddisfatto e appagato nel guardare e commentare partite di calcio maschile.", axis: "x", values: [2, 1, -1, -2] },
         { q: "Trovo che parlare di Dostoevskij sia un buon argomento di conversazione per un primo appuntamento.", axis: "x", values: [-2, -1, 1, 2] },
@@ -106,9 +106,15 @@
     }
 
     function calculateResult() {
-        if (Object.keys(userAnswers).length < questions.length) { alert("Rispondi a tutto."); return; }
+        if (Object.keys(userAnswers).length < questions.length) { 
+            alert("Rispondi a tutte le domande per procedere."); 
+            return; 
+        }
         let x = 0; let y = 0;
-        questions.forEach((q, i) => { if (q.axis === 'x') x += userAnswers[i]; else y += userAnswers[i]; });
+        questions.forEach((q, i) => { 
+            if (q.axis === 'x') x += userAnswers[i]; 
+            else y += userAnswers[i]; 
+        });
         showResult(x, y);
     }
 
@@ -118,58 +124,90 @@
         
         const ctx = document.getElementById('compassChart').getContext('2d');
         
-        // PLUGIN PER I COLORI DEI QUADRANTI
-        const backgroundPlugin = {
-            id: 'customCanvasBackgroundColor',
-            beforeDraw: (chart) => {
-                const {ctx, chartArea: {top, bottom, left, right, width, height}} = chart;
-                const centerX = left + width / 2;
-                const centerY = top + height / 2;
-
-                // Colora Quadranti
-                ctx.fillStyle = '#ffcccc'; // Citrullo (Top Right) -> In realtà le tue coord sono X+ Y-
-                ctx.fillRect(centerX, centerY, width/2, height/2); // Bottom Right
-                
-                ctx.fillStyle = '#ccffcc'; // Demonesogno (Top Right)
-                ctx.fillRect(centerX, top, width/2, height/2); // Top Right
-
-                ctx.fillStyle = '#ccccff'; // Ratto (Top Left)
-                ctx.fillRect(left, top, width/2, height/2); // Top Left
-
-                ctx.fillStyle = '#ffffcc'; // Goblin (Bottom Left)
-                ctx.fillRect(left, centerY, width/2, height/2); // Bottom Left
-            }
-        };
-
         new Chart(ctx, {
             type: 'scatter',
             data: {
                 datasets: [{
                     label: 'Soggetto',
                     data: [{ x: x, y: y }],
-                    backgroundColor: 'black',
-                    pointRadius: 10,
-                    pointStyle: 'crossRot'
+                    backgroundColor: 'red',
+                    pointRadius: 12,
+                    pointHoverRadius: 15,
+                    borderColor: 'black',
+                    borderWidth: 2,
+                    zIndex: 10 // Forza il punto sopra tutto
                 }]
             },
             options: {
-                responsive: true,
+                aspectRatio: 1,
                 scales: {
-                    x: { min: -20, max: 20, grid: { color: 'black', lineWidth: 2 }, title: { display: true, text: '← BASICO | ALTERNATIVO →' }},
-                    y: { min: -20, max: 20, grid: { color: 'black', lineWidth: 2 }, title: { display: true, text: '← INCONSAPEVOLE | CONSAPEVOLE ↑' }}
+                    x: {
+                        min: -20, max: 20,
+                        grid: { color: 'rgba(0,0,0,0.5)', lineWidth: 2 },
+                        ticks: { display: false }
+                    },
+                    y: {
+                        min: -20, max: 20,
+                        grid: { color: 'rgba(0,0,0,0.5)', lineWidth: 2 },
+                        ticks: { display: false }
+                    }
                 },
-                plugins: { legend: { display: false } }
-            },
-            plugins: [backgroundPlugin]
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false },
+                    // Disegnamo i quadranti colorati come "plugin" nel background
+                    beforeDraw: (chart) => {
+                        const {ctx, chartArea: {top, bottom, left, right, width, height}} = chart;
+                        const centerX = left + width / 2;
+                        const centerY = top + height / 2;
+
+                        // Top-Left: RATTO (Basico Consapevole)
+                        ctx.fillStyle = '#fdfa72'; // Giallino
+                        ctx.fillRect(left, top, width/2, height/2);
+                        
+                        // Top-Right: DEMONESOGNO (Alt Consapevole)
+                        ctx.fillStyle = '#a6dcef'; // Azzurrino
+                        ctx.fillRect(centerX, top, width/2, height/2);
+
+                        // Bottom-Left: GOBLIN (Basico Inconsapevole)
+                        ctx.fillStyle = '#c7ea46'; // Verdino
+                        ctx.fillRect(left, centerY, width/2, height/2);
+
+                        // Bottom-Right: CITRULLO (Alt Inconsapevole)
+                        ctx.fillStyle = '#ffb7ce'; // Rosa
+                        ctx.fillRect(centerX, centerY, width/2, height/2);
+                        
+                        // Testi dei quadranti
+                        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                        ctx.font = 'bold 16px Courier New';
+                        ctx.fillText('RATTO', left + 20, top + 30);
+                        ctx.fillText('DEMONESOGNO', right - 110, top + 30);
+                        ctx.fillText('GOBLIN', left + 20, bottom - 20);
+                        ctx.fillText('CITRULLO', right - 100, bottom - 20);
+                    }
+                }
+            }
         });
 
         const title = document.getElementById('profile-title');
         const desc = document.getElementById('profile-desc');
 
-        if (x < 0 && y < 0) { title.innerText = "GOBLIN"; desc.innerText = "Basico puro. Genuino, normie, vive di istinto e calcio."; }
-        else if (x < 0 && y >= 0) { title.innerText = "RATTO"; desc.innerText = "Basico consapevole. Il malessere evitante che finge normalità."; }
-        else if (x >= 0 && y >= 0) { title.innerText = "DEMONESOGNO"; desc.innerText = "Alternativo consapevole. Il manipolatore intellettuale."; }
-        else { title.innerText = "CITRULLO"; desc.innerText = "Alternativo smarrito. Vive tra vinili e nuvole, innocuo."; }
+        if (x < 0 && y < 0) { 
+            title.innerText = "GOBLIN"; 
+            desc.innerText = "L'uomo basico puro. Vivi di istinto, calcio e pizza in cut. Se fai una cazzata è perché non ne hai idea. Sei un normie felice, il pilastro della società."; 
+        }
+        else if (x < 0 && y >= 0) { 
+            title.innerText = "RATTO"; 
+            desc.innerText = "Basico consapevole. Sei un evitante che mimetizza la sua banalità dietro strategie di manipolazione. Usi il 'non sono pronto' come un'arma di distruzione di massa."; 
+        }
+        else if (x >= 0 && y >= 0) { 
+            title.innerText = "DEMONESOGNO"; 
+            desc.innerText = "Alternativo consapevole. Usi Dostoevskij e il patriarcato per svoltare, ma sei un manipolatore di alto livello. Colto, tossico e profondamente evitante."; 
+        }
+        else { 
+            title.innerText = "CITRULLO"; 
+            desc.innerText = "L'alternativo smarrito. Compri vestiti di persone morte e parli di cinema polacco, ma sei troppo confuso per manipolare qualcuno. Vive in una nuvola, innocuo."; 
+        }
     }
 
     function downloadImage() {
