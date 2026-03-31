@@ -1,155 +1,77 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UOMO-COMPASS</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <style>
-        body { font-family: 'Courier New', sans-serif; background: #0d0d0d; color: #00ff41; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .container { max-width: 800px; background: #1a1a1a; padding: 30px; border: 1px solid #00ff41; border-radius: 5px; }
-        .question { margin-bottom: 25px; padding: 15px; border-left: 3px solid #333; }
-        .options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
-        button { padding: 10px; background: #111; color: #00ff41; border: 1px solid #444; cursor: pointer; font-family: inherit; }
-        button.selected { background: #00ff41; color: #000; font-weight: bold; }
-        #submit-btn { width: 100%; padding: 20px; background: #00ff41; color: #000; font-weight: bold; border: none; cursor: pointer; }
-        
-        /* IL CUORE DEL FIX: IL BACKGROUND A QUADRANTI */
-        #canvas-container { 
-            position: relative; 
-            width: 500px; 
-            height: 500px; 
-            margin: 20px auto;
-            border: 2px solid #555;
-            /* Definiamo i 4 colori direttamente qui nel CSS */
-            background: linear-gradient(to bottom right, #fdfa72 50%, #a6dcef 50%), 
-                        linear-gradient(to top right, #c7ea46 50%, #ffb7ce 50%);
-            background-size: 100% 100%;
-            background-image: 
-                linear-gradient(to right, transparent 50%, #a6dcef 50%),
-                linear-gradient(to right, #fdfa72 50%, transparent 50%),
-                linear-gradient(to right, transparent 50%, #ffb7ce 50%),
-                linear-gradient(to right, #c7ea46 50%, transparent 50%);
-            background-position: top right, top left, bottom right, bottom left;
-            background-size: 100% 50%;
-            background-repeat: no-repeat;
-        }
+<style>
+    #canvas-container { 
+        position: relative; 
+        width: 550px; /* Leggermente più largo per le etichette */
+        height: 550px; 
+        margin: 20px auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-        #result-container { display: none; text-align: center; }
-        #capture-area { background: #1a1a1a; padding: 20px; border: 1px solid #00ff41; }
-        .profile-card { padding: 20px; background: #000; border: 2px solid #ff003c; margin-top: 20px; }
-        .profile-name { font-size: 2rem; color: #ff003c; }
-    </style>
-</head>
-<body>
+    /* Le etichette degli assi */
+    .axis-label {
+        position: absolute;
+        font-weight: bold;
+        font-size: 12px;
+        color: #fff;
+        text-transform: uppercase;
+        background: rgba(0,0,0,0.7);
+        padding: 2px 8px;
+        border-radius: 3px;
+        z-index: 5;
+    }
+    .label-top { top: 0; }
+    .label-bottom { bottom: 0; }
+    .label-left { left: 0; transform: rotate(-90deg) translateX(-50%); transform-origin: left; }
+    .label-right { right: 0; transform: rotate(90deg) translateX(50%); transform-origin: right; }
 
-<div id="quiz-container" class="container">
-    <h1>UOMO-COMPASS 🧭</h1>
-    <div id="questions-list"></div>
-    <button id="submit-btn" onclick="calculateResult()">ANALIZZA SOGGETTO</button>
-</div>
+    #compass-bg {
+        width: 500px;
+        height: 500px;
+        border: 2px solid #555;
+        position: relative;
+        background-image: 
+            linear-gradient(to right, transparent 50%, #a6dcef 50%),
+            linear-gradient(to right, #fdfa72 50%, transparent 50%),
+            linear-gradient(to right, transparent 50%, #ffb7ce 50%),
+            linear-gradient(to right, #c7ea46 50%, transparent 50%);
+        background-position: top right, top left, bottom right, bottom left;
+        background-size: 100% 50%;
+        background-repeat: no-repeat;
+    }
+</style>
 
-<div id="result-container">
-    <div id="capture-area">
-        <h2 style="color:white">COORDINATE INDIVIDUATE</h2>
-        <div id="canvas-container">
-            <canvas id="compassChart" width="500" height="500"></canvas>
-        </div>
-        <div class="profile-card">
-            <div id="profile-title" class="profile-name"></div>
-            <p id="profile-desc" style="color:white"></p>
-        </div>
-    </div>
-    <div style="margin-top:20px;">
-        <button onclick="downloadImage()" style="background:#ff003c; color:white; padding:15px;">⬇️ SCARICA FOTO</button>
-        <button onclick="location.reload()" style="padding:15px;">RIFAI</button>
+<div id="canvas-container">
+    <div class="axis-label label-top">Consapevole (Manipolatore)</div>
+    <div class="axis-label label-bottom">Inconsapevole (Genuino)</div>
+    <div class="axis-label label-left">Basico (Normie)</div>
+    <div class="axis-label label-right">Alternativo (Indie)</div>
+    
+    <div id="compass-bg">
+        <canvas id="compassChart" width="500" height="500"></canvas>
     </div>
 </div>
 
 <script>
-    const questions = [
-        { q: "Ti piace il calcio maschile?", axis: "x", values: [2, 1, -1, -2] },
-        { q: "Parli di Dostoevskij al primo appuntamento?", axis: "x", values: [-2, -1, 1, 2] },
-        { q: "Compri vintage da gente morta?", axis: "x", values: [-2, -1, 1, 2] },
-        { q: "Cinema d'autore > Marvel?", axis: "x", values: [-2, -1, 1, 2] },
-        { q: "Artista preferito Olly?", axis: "x", values: [2, 1, -1, -2] },
-        { q: "Vacanze a Ibiza/Gallipoli con i bro?", axis: "x", values: [2, 1, -1, -2] },
-        { q: "Nana ad addio al celibato?", axis: "x", values: [2, 1, -1, -2] },
-        { q: "Vado ad Amsterdam solo per i musei.", axis: "x", values: [-2, -1, 1, 2] },
-        { q: "Votato NO al referendum giustizia.", axis: "x", values: [2, 1, -1, -2] },
-        { q: "Niente pizza, sono in cut.", axis: "x", values: [2, 1, -1, -2] },
-        { q: "Usi i traumi per rimorchiare?", axis: "y", values: [-2, -1, 1, 2] },
-        { q: "Analizzi la 'vibe' delle tue foto IG.", axis: "y", values: [-2, -1, 1, 2] },
-        { q: "Non ti accorgi se annoi la gente.", axis: "y", values: [2, 1, -1, -2] },
-        { q: "Fai autoironia per autodifesa.", axis: "y", values: [-2, -1, 1, 2] },
-        { q: "Usi 'patriarcato' per far colpo a sinistra.", axis: "y", values: [-2, -1, 1, 2] },
-        { q: "Tutte le tue ex sono 'pazze'.", axis: "y", values: [-2, -1, 1, 2] },
-        { q: "Non si può più dire niente!", axis: "y", values: [2, 1, -1, -2] },
-        { q: "Spieghi le cose per sentirti superiore.", axis: "y", values: [-2, -1, 1, 2] },
-        { q: "Pensi che il partner esageri sempre.", axis: "y", values: [-2, -1, 1, 2] },
-        { q: "Benefit da fidanzato, responsabilità da single.", axis: "y", values: [-2, -1, 1, 2] }
-    ];
-
-    const answers = {};
-
-    function render() {
-        const root = document.getElementById('questions-list');
-        questions.forEach((q, i) => {
-            const d = document.createElement('div');
-            d.className = 'question';
-            d.innerHTML = `<div>${i+1}. ${q.q}</div><div class="options"></div>`;
-            ["Nulla", "Poco", "Sì", "Molto"].forEach((l, idx) => {
-                const b = document.createElement('button');
-                b.innerText = l;
-                b.onclick = () => {
-                    answers[i] = q.values[idx];
-                    Array.from(b.parentElement.children).forEach(x => x.classList.remove('selected'));
-                    b.classList.add('selected');
-                };
-                d.querySelector('.options').appendChild(b);
-            });
-            root.appendChild(d);
-        });
-    }
-
-    function calculateResult() {
-        if (Object.keys(answers).length < 20) return alert("Rispondi a tutto!");
-        let x = 0, y = 0;
-        questions.forEach((q, i) => { if(q.axis=='x') x+=answers[i]; else y+=answers[i]; });
-        
-        document.getElementById('quiz-container').style.display = 'none';
-        document.getElementById('result-container').style.display = 'block';
-
-        new Chart(document.getElementById('compassChart'), {
-            type: 'scatter',
-            data: { datasets: [{ data: [{x:x, y:y}], backgroundColor: 'red', pointRadius: 12, borderColor: 'black', borderWidth: 2 }] },
-            options: {
-                scales: {
-                    x: { min: -20, max: 20, grid: { color: 'rgba(0,0,0,0.5)' }, ticks: { display: false } },
-                    y: { min: -20, max: 20, grid: { color: 'rgba(0,0,0,0.5)' }, ticks: { display: false } }
-                },
-                plugins: { legend: { display: false } }
+    // Nella funzione showResult, assicurati che le grid lines siano ben visibili
+    // Modifica le opzioni di Chart.js così:
+    options: {
+        scales: {
+            x: { 
+                min: -20, max: 20, 
+                grid: { color: 'rgba(0,0,0,0.4)', lineWidth: 2 }, 
+                ticks: { display: false } 
+            },
+            y: { 
+                min: -20, max: 20, 
+                grid: { color: 'rgba(0,0,0,0.4)', lineWidth: 2 }, 
+                ticks: { display: false } 
             }
-        });
-
-        const t = document.getElementById('profile-title'), d = document.getElementById('profile-desc');
-        if (x<0 && y<0) { t.innerText="GOBLIN"; d.innerText="Basico puro. Genuino, normie, pilastro della società."; }
-        else if (x<0 && y>=0) { t.innerText="RATTO"; d.innerText="Basico consapevole. Un evitante mimetizzato."; }
-        else if (x>=0 && y>=0) { t.innerText="DEMONESOGNO"; d.innerText="Alternativo consapevole. Colto e tossico."; }
-        else { t.innerText="CITRULLO"; d.innerText="Alternativo smarrito. Innocuo e tra le nuvole."; }
+        },
+        plugins: { 
+            legend: { display: false },
+            tooltip: { enabled: false }
+        }
     }
-
-    function downloadImage() {
-        html2canvas(document.querySelector("#capture-area")).then(canvas => {
-            const a = document.createElement('a');
-            a.download = 'risultato.png';
-            a.href = canvas.toDataURL();
-            a.click();
-        });
-    }
-
-    window.onload = render;
 </script>
-</body>
-</html>
