@@ -1,77 +1,288 @@
-<style>
-    #canvas-container { 
-        position: relative; 
-        width: 550px; /* Leggermente più largo per le etichette */
-        height: 550px; 
-        margin: 20px auto;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UOMO-COMPASS 🧭</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+      <!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UOMO-COMPASS 🧭</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body { font-family: 'Courier New', Courier, monospace; background: #0d0d0d; color: #00ff41; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { max-width: 800px; background: #1a1a1a; padding: 30px; border: 1px solid #00ff41; border-radius: 5px; }
+        h1 { text-align: center; text-transform: uppercase; }
+        .question { margin-bottom: 25px; padding: 15px; border-left: 3px solid #333; }
+        .options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
+        button { padding: 10px; background: #111; color: #00ff41; border: 1px solid #444; cursor: pointer; font-family: inherit; }
+        button.selected { background: #00ff41; color: #000; font-weight: bold; }
+        #submit-btn { width: 100%; padding: 20px; background: #00ff41; color: #000; font-weight: bold; border: none; cursor: pointer; text-transform: uppercase; }
+        
+        /* IL FIX DEI COLORI */
+        #canvas-container { 
+            position: relative; 
+            width: 500px; 
+            height: 500px; 
+            margin: 20px auto;
+            border: 2px solid #555;
+            background-image: 
+                linear-gradient(to right, transparent 50%, #a6dcef 50%),
+                linear-gradient(to right, #fdfa72 50%, transparent 50%),
+                linear-gradient(to right, transparent 50%, #ffb7ce 50%),
+                linear-gradient(to right, #c7ea46 50%, transparent 50%);
+            background-position: top right, top left, bottom right, bottom left;
+            background-size: 100% 50%;
+            background-repeat: no-repeat;
+        }
 
-    /* Le etichette degli assi */
-    .axis-label {
-        position: absolute;
-        font-weight: bold;
-        font-size: 12px;
-        color: #fff;
-        text-transform: uppercase;
-        background: rgba(0,0,0,0.7);
-        padding: 2px 8px;
-        border-radius: 3px;
-        z-index: 5;
-    }
-    .label-top { top: 0; }
-    .label-bottom { bottom: 0; }
-    .label-left { left: 0; transform: rotate(-90deg) translateX(-50%); transform-origin: left; }
-    .label-right { right: 0; transform: rotate(90deg) translateX(50%); transform-origin: right; }
+        #result-container { display: none; text-align: center; }
+        #capture-area { background: #1a1a1a; padding: 20px; border: 1px solid #00ff41; }
+        .profile-card { padding: 20px; background: #000; border: 2px solid #ff003c; margin-top: 20px; }
+        .profile-name { font-size: 2.2rem; color: #ff003c; text-transform: uppercase; }
+    </style>
+</head>
+<body>
 
-    #compass-bg {
-        width: 500px;
-        height: 500px;
-        border: 2px solid #555;
-        position: relative;
-        background-image: 
-            linear-gradient(to right, transparent 50%, #a6dcef 50%),
-            linear-gradient(to right, #fdfa72 50%, transparent 50%),
-            linear-gradient(to right, transparent 50%, #ffb7ce 50%),
-            linear-gradient(to right, #c7ea46 50%, transparent 50%);
-        background-position: top right, top left, bottom right, bottom left;
-        background-size: 100% 50%;
-        background-repeat: no-repeat;
-    }
-</style>
+<div id="quiz-container" class="container">
+    <h1>UOMO-COMPASS 🧭</h1>
+    <div id="questions-list"></div>
+    <button id="submit-btn" onclick="calculateResult()">ANALIZZA SOGGETTO</button>
+</div>
 
-<div id="canvas-container">
-    <div class="axis-label label-top">Consapevole (Manipolatore)</div>
-    <div class="axis-label label-bottom">Inconsapevole (Genuino)</div>
-    <div class="axis-label label-left">Basico (Normie)</div>
-    <div class="axis-label label-right">Alternativo (Indie)</div>
-    
-    <div id="compass-bg">
-        <canvas id="compassChart" width="500" height="500"></canvas>
+<div id="result-container">
+    <div id="capture-area">
+        <h2 style="color:white; text-transform: uppercase;">Coordinate Individuate</h2>
+        <div id="canvas-container">
+            <canvas id="compassChart" width="500" height="500"></canvas>
+        </div>
+        <div class="profile-card">
+            <div id="profile-title" class="profile-name"></div>
+            <p id="profile-desc" style="color:white; font-size: 1.1rem;"></p>
+        </div>
+    </div>
+    <div style="margin-top:20px; display: flex; gap: 10px; justify-content: center;">
+        <button onclick="downloadImage()" style="background:#ff003c; color:white; padding:15px; border:none; font-weight:bold;">⬇️ SCARICA RISULTATO</button>
+        <button onclick="location.reload()" style="padding:15px; background:#444; color:white; border:none;">RIFAI</button>
     </div>
 </div>
 
 <script>
-    // Nella funzione showResult, assicurati che le grid lines siano ben visibili
-    // Modifica le opzioni di Chart.js così:
-    options: {
-        scales: {
-            x: { 
-                min: -20, max: 20, 
-                grid: { color: 'rgba(0,0,0,0.4)', lineWidth: 2 }, 
-                ticks: { display: false } 
-            },
-            y: { 
-                min: -20, max: 20, 
-                grid: { color: 'rgba(0,0,0,0.4)', lineWidth: 2 }, 
-                ticks: { display: false } 
-            }
-        },
-        plugins: { 
-            legend: { display: false },
-            tooltip: { enabled: false }
-        }
+    const questions = [
+        // ASSE X: BASICO (-) vs ALTERNATIVO (+)
+        { q: "Mi sento soddisfatto e appagato nel guardare e commentare partite di calcio maschile.", axis: "x", values: [2, 1, -1, -2] },
+        { q: "Trovo che parlare di Dostoevskij sia un buon argomento di conversazione per un primo appuntamento.", axis: "x", values: [-2, -1, 1, 2] },
+        { q: "Compro vestiti esclusivamente in mercatini vintage indossati da persone morte almeno da un decennio.", axis: "x", values: [-2, -1, 1, 2] },
+        { q: "Meglio il cinema d'autore (in lingua originale con sottotitoli) rispetto a un film di supereroi della Marvel.", axis: "x", values: [-2, -1, 1, 2] },
+        { q: "Artista preferito? Olly.", axis: "x", values: [2, 1, -1, -2] },
+        { q: "Adoro andare in vacanza con i bro a Gallipoli, Mykonos e Ibiza.", axis: "x", values: [2, 1, -1, -2] },
+        { q: "È normalissimo affittare una nana per un addio al celibato.", axis: "x", values: [2, 1, -1, -2] },
+        { q: "Vado ad Amsterdam per le cannette e i musei, MICA PER LE MIGNOTTE.", axis: "x", values: [-2, -1, 1, 2] },
+        { q: "Ho votato NO al referendum sulla giustizia.", axis: "x", values: [2, 1, -1, -2] },
+        { q: "Stasera pizza? No scusami fra sono in cut.", axis: "x", values: [2, 1, -1, -2] },
+
+        // ASSE Y: INCONSAPEVOLE (-) vs CONSAPEVOLE (+)
+        { q: "Mi è capitato di usare un mio trauma infantile o una mia insicurezza per far colpo o giustificare un comportamento di merda.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Quando scelgo una foto per IG, la analizzo per capire esattamente che tipo di 'vibe' comunica ai follower.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Non mi rendo quasi mai conto di stare esagerando con i racconti o di annoiare chi mi ascolta.", axis: "y", values: [2, 1, -1, -2] },
+        { q: "Faccio autoironia feroce sui miei difetti solo per togliere agli altri il potere di usarli contro di me.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Uso termini come 'patriarcato' o 'gaslighting' perché so che mi fanno svoltare con le ragazze di sinistra.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Le mie ex sono tutte 'pazze' o 'psicopatiche': io sono sempre stato quello equilibrato.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "NON SI PUÒ PIÙ DIRE NIENTE!!!!", axis: "y", values: [2, 1, -1, -2] },
+        { q: "Mi sento realizzato quando posso mostrare a qualcuno le cose che so.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Quando il partner si arrabbia con me, penso spesso che stia esagerando senza motivo.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Dico di non essere pronto per una relazione ma mi prendo tutti i benefit senza le responsabilità.", axis: "y", values: [-2, -1, 1, 2] }
+    ];
+
+    const answers = {};
+
+    function render() {
+        const root = document.getElementById('questions-list');
+        const labels = ["Per niente", "Poco", "Abbastanza", "Molto"];
+        questions.forEach((q, i) => {
+            const d = document.createElement('div');
+            d.className = 'question';
+            d.innerHTML = `<div><strong>${i+1}.</strong> ${q.q}</div><div class="options"></div>`;
+            labels.forEach((l, idx) => {
+                const b = document.createElement('button');
+                b.innerText = l;
+                b.onclick = () => {
+                    answers[i] = q.values[idx];
+                    Array.from(b.parentElement.children).forEach(x => x.classList.remove('selected'));
+                    b.classList.add('selected');
+                };
+                d.querySelector('.options').appendChild(b);
+            });
+            root.appendChild(d);
+        });
     }
+
+    function calculateResult() {
+        if (Object.keys(answers).length < 20) return alert("Rispondi a tutte le domande, non barare!");
+        let x = 0, y = 0;
+        questions.forEach((q, i) => { if(q.axis=='x') x+=answers[i]; else y+=answers[i]; });
+        
+        document.getElementById('quiz-container').style.display = 'none';
+        document.getElementById('result-container').style.display = 'block';
+
+        new Chart(document.getElementById('compassChart'), {
+            type: 'scatter',
+            data: { datasets: [{ data: [{x:x, y:y}], backgroundColor: 'red', pointRadius: 14, borderColor: 'black', borderWidth: 2 }] },
+            options: {
+                scales: {
+                    x: { min: -20, max: 20, grid: { color: 'rgba(0,0,0,0.5)', lineWidth: 2 }, ticks: { display: false } },
+                    y: { min: -20, max: 20, grid: { color: 'rgba(0,0,0,0.5)', lineWidth: 2 }, ticks: { display: false } }
+                },
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                }
+            }
+        });
+
+        const t = document.getElementById('profile-title'), d = document.getElementById('profile-desc');
+        if (x < 0 && y < 0) { t.innerText="GOBLIN"; d.innerText="L'uomo basico puro. Vivi di istinto, calcio e pizza in cut. Se fai una cazzata è perché non ne hai idea. Sei un normie felice, il pilastro della società."; }
+        else if (x < 0 && y >= 0) { t.innerText="RATTO"; d.innerText="Basico consapevole. Sei un evitante che mimetizza la sua banalità dietro strategie di manipolazione. Usi il 'non sono pronto' come un'arma di distruzione di massa."; }
+        else if (x >= 0 && y >= 0) { t.innerText="DEMONESOGNO"; d.innerText="Alternativo consapevole. Usi Dostoevskij e il patriarcato per svoltare, ma sei un manipolatore di alto livello. Colto, tossico e profondamente evitante."; }
+        else { t.innerText="CITRULLO"; d.innerText="L'alternativo smarrito. Compri vestiti di persone morte e parli di cinema polacco, ma sei troppo confuso per manipolare qualcuno. Vive in una nuvola, innocuo."; }
+    }
+
+    function downloadImage() {
+        html2canvas(document.querySelector("#capture-area")).then(canvas => {
+            const a = document.createElement('a');
+            a.download = 'risultato_uomo_compass.png';
+            a.href = canvas.toDataURL();
+            a.click();
+        });
+    }
+
+    window.onload = render;
 </script>
+</body>
+</html>
+    </style>
+</head>
+<body>
+
+<div id="quiz-container" class="container">
+    <h1>UOMO-COMPASS</h1>
+    <div id="questions-list"></div>
+    <button id="submit-btn" onclick="calculateResult()">ANALIZZA SOGGETTO</button>
+</div>
+
+<div id="result-container">
+    <div id="capture-area">
+        <h2 style="color:white; text-transform: uppercase;">Coordinate Individuate</h2>
+        <div id="canvas-container">
+            <canvas id="compassChart" width="500" height="500"></canvas>
+        </div>
+        <div class="profile-card">
+            <div id="profile-title" class="profile-name"></div>
+            <p id="profile-desc" style="color:white; font-size: 1.1rem;"></p>
+        </div>
+    </div>
+    <div style="margin-top:20px; display: flex; gap: 10px; justify-content: center;">
+        <button onclick="downloadImage()" style="background:#ff003c; color:white; padding:15px; border:none; font-weight:bold;">⬇️ SCARICA RISULTATO</button>
+        <button onclick="location.reload()" style="padding:15px; background:#444; color:white; border:none;">RIFAI</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        // ASSE X: BASICO (-) vs ALTERNATIVO (+)
+        { q: "Mi sento soddisfatto e appagato nel guardare e commentare partite di calcio maschile.", axis: "x", values: [2, 1, -1, -2] },
+        { q: "Trovo che parlare di Dostoevskij sia un buon argomento di conversazione per un primo appuntamento.", axis: "x", values: [-2, -1, 1, 2] },
+        { q: "Compro vestiti esclusivamente in mercatini vintage indossati da persone morte almeno da un decennio.", axis: "x", values: [-2, -1, 1, 2] },
+        { q: "Meglio il cinema d'autore (in lingua originale con sottotitoli) rispetto a un film di supereroi della Marvel.", axis: "x", values: [-2, -1, 1, 2] },
+        { q: "Artista preferito? Olly.", axis: "x", values: [2, 1, -1, -2] },
+        { q: "Adoro andare in vacanza con i bro a Gallipoli, Mykonos e Ibiza.", axis: "x", values: [2, 1, -1, -2] },
+        { q: "È normalissimo affittare una nana per un addio al celibato.", axis: "x", values: [2, 1, -1, -2] },
+        { q: "Vado ad Amsterdam per le cannette e i musei, MICA PER LE MIGNOTTE.", axis: "x", values: [-2, -1, 1, 2] },
+        { q: "Ho votato NO al referendum sulla giustizia.", axis: "x", values: [2, 1, -1, -2] },
+        { q: "Stasera pizza? No scusami fra sono in cut.", axis: "x", values: [2, 1, -1, -2] },
+
+        // ASSE Y: INCONSAPEVOLE (-) vs CONSAPEVOLE (+)
+        { q: "Mi è capitato di usare un mio trauma infantile o una mia insicurezza per far colpo o giustificare un comportamento di merda.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Quando scelgo una foto per IG, la analizzo per capire esattamente che tipo di 'vibe' comunica ai follower.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Non mi rendo quasi mai conto di stare esagerando con i racconti o di annoiare chi mi ascolta.", axis: "y", values: [2, 1, -1, -2] },
+        { q: "Faccio autoironia feroce sui miei difetti solo per togliere agli altri il potere di usarli contro di me.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Uso termini come 'patriarcato' o 'gaslighting' perché so che mi fanno svoltare con le ragazze di sinistra.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Le mie ex sono tutte 'pazze' o 'psicopatiche': io sono sempre stato quello equilibrato.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "NON SI PUÒ PIÙ DIRE NIENTE!!!!", axis: "y", values: [2, 1, -1, -2] },
+        { q: "Mi sento realizzato quando posso mostrare a qualcuno le cose che so.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Quando il partner si arrabbia con me, penso spesso che stia esagerando senza motivo.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Dico di non essere pronto per una relazione ma mi prendo tutti i benefit senza le responsabilità.", axis: "y", values: [-2, -1, 1, 2] }
+    ];
+
+    const answers = {};
+
+    function render() {
+        const root = document.getElementById('questions-list');
+        const labels = ["Per niente", "Poco", "Abbastanza", "Molto"];
+        questions.forEach((q, i) => {
+            const d = document.createElement('div');
+            d.className = 'question';
+            d.innerHTML = `<div><strong>${i+1}.</strong> ${q.q}</div><div class="options"></div>`;
+            labels.forEach((l, idx) => {
+                const b = document.createElement('button');
+                b.innerText = l;
+                b.onclick = () => {
+                    answers[i] = q.values[idx];
+                    Array.from(b.parentElement.children).forEach(x => x.classList.remove('selected'));
+                    b.classList.add('selected');
+                };
+                d.querySelector('.options').appendChild(b);
+            });
+            root.appendChild(d);
+        });
+    }
+
+    function calculateResult() {
+        if (Object.keys(answers).length < 20) return alert("Rispondi a tutte le domande, non barare!");
+        let x = 0, y = 0;
+        questions.forEach((q, i) => { if(q.axis=='x') x+=answers[i]; else y+=answers[i]; });
+        
+        document.getElementById('quiz-container').style.display = 'none';
+        document.getElementById('result-container').style.display = 'block';
+
+        new Chart(document.getElementById('compassChart'), {
+            type: 'scatter',
+            data: { datasets: [{ data: [{x:x, y:y}], backgroundColor: 'red', pointRadius: 14, borderColor: 'black', borderWidth: 2 }] },
+            options: {
+                scales: {
+                    x: { min: -20, max: 20, grid: { color: 'rgba(0,0,0,0.5)', lineWidth: 2 }, ticks: { display: false } },
+                    y: { min: -20, max: 20, grid: { color: 'rgba(0,0,0,0.5)', lineWidth: 2 }, ticks: { display: false } }
+                },
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                }
+            }
+        });
+
+        const t = document.getElementById('profile-title'), d = document.getElementById('profile-desc');
+        if (x < 0 && y < 0) { t.innerText="GOBLIN"; d.innerText="L'uomo basico puro. Vivi di istinto, calcio e pizza in cut. Se fai una cazzata è perché non ne hai idea. Sei un normie felice, il pilastro della società."; }
+        else if (x < 0 && y >= 0) { t.innerText="RATTO"; d.innerText="Basico consapevole. Sei un evitante che mimetizza la sua banalità dietro strategie di manipolazione. Usi il 'non sono pronto' come un'arma di distruzione di massa."; }
+        else if (x >= 0 && y >= 0) { t.innerText="DEMONESOGNO"; d.innerText="Alternativo consapevole. Usi Dostoevskij e il patriarcato per svoltare, ma sei un manipolatore di alto livello. Colto, tossico e profondamente evitante."; }
+        else { t.innerText="CITRULLO"; d.innerText="L'alternativo smarrito. Compri vestiti di persone morte e parli di cinema polacco, ma sei troppo confuso per manipolare qualcuno. Vive in una nuvola, innocuo."; }
+    }
+
+    function downloadImage() {
+        html2canvas(document.querySelector("#capture-area")).then(canvas => {
+            const a = document.createElement('a');
+            a.download = 'risultato_uomo_compass.png';
+            a.href = canvas.toDataURL();
+            a.click();
+        });
+    }
+
+    window.onload = render;
+</script>
+</body>
+</html>
