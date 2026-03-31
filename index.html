@@ -3,143 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Uomo-Compass 🧭</title>
+    <title>UOMO-COMPASS</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        body { font-family: 'Courier New', Courier, monospace; background: #0d0d0d; color: #00ff41; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        body { font-family: 'Courier New', sans-serif; background: #0d0d0d; color: #00ff41; display: flex; flex-direction: column; align-items: center; padding: 20px; }
         .container { max-width: 800px; background: #1a1a1a; padding: 30px; border: 1px solid #00ff41; border-radius: 5px; }
-        h1 { text-align: center; text-transform: uppercase; font-size: 2.2rem; margin-bottom: 5px; }
-        .subtitle { text-align: center; color: #888; margin-bottom: 30px; font-size: 0.9rem; }
         .question { margin-bottom: 25px; padding: 15px; border-left: 3px solid #333; }
-        .question-text { font-size: 1.1rem; display: block; margin-bottom: 12px; color: #eee; }
-        .options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-        button.option-btn { padding: 10px; border: 1px solid #444; background: #111; color: #00ff41; cursor: pointer; font-family: inherit; }
-        button.option-btn.selected { background: #00ff41; color: #000; font-weight: bold; }
-        #submit-btn { width: 100%; padding: 20px; background: #00ff41; color: #000; border: none; font-size: 1.3rem; font-weight: bold; cursor: pointer; margin-top: 30px; }
-        #result-container { display: none; text-align: center; width: 100%; max-width: 600px; }
+        .options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
+        button { padding: 10px; background: #111; color: #00ff41; border: 1px solid #444; cursor: pointer; font-family: inherit; }
+        button.selected { background: #00ff41; color: #000; font-weight: bold; }
+        #submit-btn { width: 100%; padding: 20px; background: #00ff41; color: #000; font-weight: bold; border: none; cursor: pointer; }
+        
+        /* IL CUORE DEL FIX: IL BACKGROUND A QUADRANTI */
+        #canvas-container { 
+            position: relative; 
+            width: 500px; 
+            height: 500px; 
+            margin: 20px auto;
+            border: 2px solid #555;
+            /* Definiamo i 4 colori direttamente qui nel CSS */
+            background: linear-gradient(to bottom right, #fdfa72 50%, #a6dcef 50%), 
+                        linear-gradient(to top right, #c7ea46 50%, #ffb7ce 50%);
+            background-size: 100% 100%;
+            background-image: 
+                linear-gradient(to right, transparent 50%, #a6dcef 50%),
+                linear-gradient(to right, #fdfa72 50%, transparent 50%),
+                linear-gradient(to right, transparent 50%, #ffb7ce 50%),
+                linear-gradient(to right, #c7ea46 50%, transparent 50%);
+            background-position: top right, top left, bottom right, bottom left;
+            background-size: 100% 50%;
+            background-repeat: no-repeat;
+        }
+
+        #result-container { display: none; text-align: center; }
         #capture-area { background: #1a1a1a; padding: 20px; border: 1px solid #00ff41; }
-        #canvas-wrapper { position: relative; background: white; padding: 10px; border-radius: 5px; margin: 20px 0; }
-        canvas { background: transparent; max-width: 100%; height: auto; }
-        .profile-card { padding: 25px; border: 2px solid #ff003c; background: #000; margin-top: 20px; }
-        .profile-name { font-size: 2.5rem; color: #ff003c; text-transform: uppercase; margin-bottom: 10px; }
-        #profile-desc { color: #eee; }
-        .action-btns { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
-        .download-btn { background: #ff003c; color: white; padding: 15px 30px; border: none; cursor: pointer; font-weight: bold; font-family: inherit; }
+        .profile-card { padding: 20px; background: #000; border: 2px solid #ff003c; margin-top: 20px; }
+        .profile-name { font-size: 2rem; color: #ff003c; }
     </style>
 </head>
 <body>
 
 <div id="quiz-container" class="container">
     <h1>UOMO-COMPASS 🧭</h1>
-    <p class="subtitle">Analisi termonucleare del maschio contemporaneo.</p>
-    <div id="questions-list">
-        </div>
-    <button id="submit-btn" onclick="calculateResult()">GENERA SENTENZA</button>
+    <div id="questions-list"></div>
+    <button id="submit-btn" onclick="calculateResult()">ANALIZZA SOGGETTO</button>
 </div>
 
 <div id="result-container">
     <div id="capture-area">
         <h2 style="color:white">COORDINATE INDIVIDUATE</h2>
-        <div id="canvas-wrapper">
+        <div id="canvas-container">
             <canvas id="compassChart" width="500" height="500"></canvas>
         </div>
         <div class="profile-card">
             <div id="profile-title" class="profile-name"></div>
-            <p id="profile-desc"></p>
+            <p id="profile-desc" style="color:white"></p>
         </div>
     </div>
-    <div class="action-btns">
-        <button class="download-btn" onclick="downloadImage()">⬇️ SCARICA RISULTATO</button>
-        <button onclick="location.reload()" style="background:#444; color:white; border:none; padding:15px; cursor:pointer;">RIFAI</button>
+    <div style="margin-top:20px;">
+        <button onclick="downloadImage()" style="background:#ff003c; color:white; padding:15px;">⬇️ SCARICA FOTO</button>
+        <button onclick="location.reload()" style="padding:15px;">RIFAI</button>
     </div>
 </div>
 
 <script>
     const questions = [
-        { q: "Mi sento soddisfatto nel guardare partite di calcio maschile.", axis: "x", values: [2, 1, -1, -2] },
-        { q: "Parlare di Dostoevskij è un buon argomento al primo appuntamento.", axis: "x", values: [-2, -1, 1, 2] },
-        { q: "Compro vestiti in mercatini vintage usati da gente morta.", axis: "x", values: [-2, -1, 1, 2] },
-        { q: "Meglio il cinema d'autore rispetto alla Marvel.", axis: "x", values: [-2, -1, 1, 2] },
-        { q: "Artista preferito? Olly.", axis: "x", values: [2, 1, -1, -2] },
-        { q: "Adoro le vacanze con i bro a Gallipoli o Ibiza.", axis: "x", values: [2, 1, -1, -2] },
-        { q: "Normalissimo affittare una nana per addio al celibato.", axis: "x", values: [2, 1, -1, -2] },
-        { q: "Vado ad Amsterdam per i musei, MICA PER LE MIGNOTTE.", axis: "x", values: [-2, -1, 1, 2] },
-        { q: "Ho votato NO al referendum sulla giustizia.", axis: "x", values: [2, 1, -1, -2] },
-        { q: "Stasera pizza? No scusami fra sono in cut.", axis: "x", values: [2, 1, -1, -2] },
-        { q: "Uso un mio trauma per far colpo o giustificare cazzate.", axis: "y", values: [-2, -1, 1, 2] },
-        { q: "Analizzo le foto IG per capire la 'vibe' che comunico.", axis: "y", values: [-2, -1, 1, 2] },
-        { q: "Non mi accorgo se sto annoiando chi mi ascolta.", axis: "y", values: [2, 1, -1, -2] },
-        { q: "Faccio autoironia solo per togliere potere agli altri.", axis: "y", values: [-2, -1, 1, 2] },
-        { q: "Uso termini come 'patriarcato' per svoltare con le raga di sinistra.", axis: "y", values: [-2, -1, 1, 2] },
-        { q: "Le mie ex sono tutte 'pazze' o 'psicopatiche'.", axis: "y", values: [-2, -1, 1, 2] },
-        { q: "NON SI PUÒ PIÙ DIRE NIENTE!!!!", axis: "y", values: [2, 1, -1, -2] },
-        { q: "Mi sento realizzato quando mostro le cose che so.", axis: "y", values: [-2, -1, 1, 2] },
-        { q: "Quando il partner si arrabbia, penso stia esagerando.", axis: "y", values: [-2, -1, 1, 2] },
-        { q: "Niente relazione seria, ma voglio tutti i benefit.", axis: "y", values: [-2, -1, 1, 2] }
+        { q: "Ti piace il calcio maschile?", axis: "x", values: [2, 1, -1, -2] },
+        { q: "Parli di Dostoevskij al primo appuntamento?", axis: "x", values: [-2, -1, 1, 2] },
+        { q: "Compri vintage da gente morta?", axis: "x", values: [-2, -1, 1, 2] },
+        { q: "Cinema d'autore > Marvel?", axis: "x", values: [-2, -1, 1, 2] },
+        { q: "Artista preferito Olly?", axis: "x", values: [2, 1, -1, -2] },
+        { q: "Vacanze a Ibiza/Gallipoli con i bro?", axis: "x", values: [2, 1, -1, -2] },
+        { q: "Nana ad addio al celibato?", axis: "x", values: [2, 1, -1, -2] },
+        { q: "Vado ad Amsterdam solo per i musei.", axis: "x", values: [-2, -1, 1, 2] },
+        { q: "Votato NO al referendum giustizia.", axis: "x", values: [2, 1, -1, -2] },
+        { q: "Niente pizza, sono in cut.", axis: "x", values: [2, 1, -1, -2] },
+        { q: "Usi i traumi per rimorchiare?", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Analizzi la 'vibe' delle tue foto IG.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Non ti accorgi se annoi la gente.", axis: "y", values: [2, 1, -1, -2] },
+        { q: "Fai autoironia per autodifesa.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Usi 'patriarcato' per far colpo a sinistra.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Tutte le tue ex sono 'pazze'.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Non si può più dire niente!", axis: "y", values: [2, 1, -1, -2] },
+        { q: "Spieghi le cose per sentirti superiore.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Pensi che il partner esageri sempre.", axis: "y", values: [-2, -1, 1, 2] },
+        { q: "Benefit da fidanzato, responsabilità da single.", axis: "y", values: [-2, -1, 1, 2] }
     ];
 
-    const userAnswers = {};
+    const answers = {};
 
-    function renderQuestions() {
-        const list = document.getElementById('questions-list');
-        const labels = ["Per niente", "Poco", "Abbastanza", "Molto"];
+    function render() {
+        const root = document.getElementById('questions-list');
         questions.forEach((q, i) => {
-            const div = document.createElement('div');
-            div.className = 'question';
-            div.innerHTML = `<span class="question-text">${i + 1}. ${q.q}</span>`;
-            const optDiv = document.createElement('div');
-            optDiv.className = 'options';
-            q.values.forEach((v, idx) => {
+            const d = document.createElement('div');
+            d.className = 'question';
+            d.innerHTML = `<div>${i+1}. ${q.q}</div><div class="options"></div>`;
+            ["Nulla", "Poco", "Sì", "Molto"].forEach((l, idx) => {
                 const b = document.createElement('button');
-                b.className = 'option-btn';
-                b.innerText = labels[idx];
+                b.innerText = l;
                 b.onclick = () => {
-                    userAnswers[i] = v;
-                    Array.from(optDiv.children).forEach(btn => btn.classList.remove('selected'));
+                    answers[i] = q.values[idx];
+                    Array.from(b.parentElement.children).forEach(x => x.classList.remove('selected'));
                     b.classList.add('selected');
                 };
-                optDiv.appendChild(b);
+                d.querySelector('.options').appendChild(b);
             });
-            div.appendChild(optDiv);
-            list.appendChild(div);
+            root.appendChild(d);
         });
     }
 
     function calculateResult() {
-        if (Object.keys(userAnswers).length < 20) { alert("Rispondi a tutto!"); return; }
+        if (Object.keys(answers).length < 20) return alert("Rispondi a tutto!");
         let x = 0, y = 0;
-        questions.forEach((q, i) => { if (q.axis === 'x') x += userAnswers[i]; else y += userAnswers[i]; });
-        showResult(x, y);
-    }
-
-    function showResult(x, y) {
+        questions.forEach((q, i) => { if(q.axis=='x') x+=answers[i]; else y+=answers[i]; });
+        
         document.getElementById('quiz-container').style.display = 'none';
         document.getElementById('result-container').style.display = 'block';
-        const ctx = document.getElementById('compassChart').getContext('2d');
-        
-        new Chart(ctx, {
+
+        new Chart(document.getElementById('compassChart'), {
             type: 'scatter',
-            data: { datasets: [{ data: [{x:x, y:y}], backgroundColor: 'red', pointRadius: 12, borderColor: 'white', borderWidth: 3 }] },
+            data: { datasets: [{ data: [{x:x, y:y}], backgroundColor: 'red', pointRadius: 12, borderColor: 'black', borderWidth: 2 }] },
             options: {
                 scales: {
-                    x: { min: -20, max: 20, grid: {color: '#000'} },
-                    y: { min: -20, max: 20, grid: {color: '#000'} }
+                    x: { min: -20, max: 20, grid: { color: 'rgba(0,0,0,0.5)' }, ticks: { display: false } },
+                    y: { min: -20, max: 20, grid: { color: 'rgba(0,0,0,0.5)' }, ticks: { display: false } }
                 },
-                plugins: {
-                    legend: { display: false },
-                    beforeDraw: (c) => {
-                        const {ctx, chartArea: {top, bottom, left, right, width, height}} = c;
-                        const cx = left + width/2, cy = top + height/2;
-                        ctx.fillStyle = '#fdfa72'; ctx.fillRect(left, top, width/2, height/2); // RATTO
-                        ctx.fillStyle = '#a6dcef'; ctx.fillRect(cx, top, width/2, height/2); // DEMONESOGNO
-                        ctx.fillStyle = '#c7ea46'; ctx.fillRect(left, cy, width/2, height/2); // GOBLIN
-                        ctx.fillStyle = '#ffb7ce'; ctx.fillRect(cx, cy, width/2, height/2); // CITRULLO
-                        ctx.fillStyle = 'black'; ctx.font = 'bold 12px Arial';
-                        ctx.fillText('RATTO', left+5, top+15); ctx.fillText('DEMONESOGNO', right-90, top+15);
-                        ctx.fillText('GOBLIN', left+5, bottom-5); ctx.fillText('CITRULLO', right-70, bottom-5);
-                    }
-                }
+                plugins: { legend: { display: false } }
             }
         });
 
@@ -152,15 +142,14 @@
 
     function downloadImage() {
         html2canvas(document.querySelector("#capture-area")).then(canvas => {
-            const link = document.createElement('a');
-            link.download = 'uomo-compass.png';
-            link.href = canvas.toDataURL();
-            link.click();
+            const a = document.createElement('a');
+            a.download = 'risultato.png';
+            a.href = canvas.toDataURL();
+            a.click();
         });
     }
 
-    // Avvio forzato
-    window.onload = renderQuestions;
+    window.onload = render;
 </script>
 </body>
 </html>
